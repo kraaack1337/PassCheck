@@ -1,0 +1,54 @@
+services:
+  # ─── Frontend: Vite dev-сервер ──────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      # Hot-reload: монтируем исходники поверх скопированных в образ
+      - ./password-analyzer-frontend/src:/app/src
+      - ./password-analyzer-frontend/index.html:/app/index.html
+      # Не перезаписываем node_modules из контейнера
+      - frontend_node_modules:/app/node_modules
+    environment:
+      # Адрес бэкенда для Vite proxy (внутри Docker-сети)
+      - VITE_BACKEND_URL=http://backend:3001
+    depends_on:
+      - backend
+    # DNS Google — помогает, если провайдер блокирует внешние ресурсы
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+
+  # ─── Backend: NestJS dev-сервер ─────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "3001:3001"
+    volumes:
+      # Hot-reload: монтируем исходники
+      - ./password-analyzer-backend/src:/app/src
+      # Не перезаписываем node_modules из контейнера
+      - backend_node_modules:/app/node_modules
+    environment:
+      - PORT=3001
+      # В Docker фронтенд доступен по имени сервиса
+      - FRONTEND_ORIGIN=http://localhost:3000
+    # DNS Google — помогает обойти блокировку api.pwnedpasswords.com
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  frontend_node_modules:
+  backend_node_modules:

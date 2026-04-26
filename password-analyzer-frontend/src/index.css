@@ -1,0 +1,147 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════
+   Password Analyzer — Design System
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Custom Theme Tokens ─────────────────────────────────── */
+@theme {
+  --color-surface-900: #0a0a0f;
+  --color-surface-800: #12121a;
+  --color-surface-700: #1a1a26;
+  --color-surface-600: #252535;
+  --color-surface-500: #32324a;
+
+  --color-accent-cyan: #06d6a0;
+  --color-accent-purple: #7b61ff;
+  --color-accent-pink: #f72585;
+
+  --color-strength-0: #ef4444;
+  --color-strength-1: #f97316;
+  --color-strength-2: #eab308;
+  --color-strength-3: #22c55e;
+  --color-strength-4: #06d6a0;
+
+  --font-family-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ─── Base ────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family-sans);
+  background-color: var(--color-surface-900);
+  color: #e2e8f0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Animated Gradient Background ────────────────────────── */
+.bg-gradient-animated {
+  background: linear-gradient(135deg,
+      var(--color-surface-900) 0%,
+      #0f0f1a 25%,
+      #1a0a2e 50%,
+      #0a1628 75%,
+      var(--color-surface-900) 100%);
+  background-size: 400% 400%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+@keyframes gradient-shift {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* ─── Glassmorphism Card ──────────────────────────────────── */
+.glass-card {
+  background: rgba(18, 18, 26, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(123, 97, 255, 0.15);
+  border-radius: 1.25rem;
+  box-shadow:
+    0 0 40px rgba(123, 97, 255, 0.06),
+    0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* ─── Strength Meter Bar Animation ────────────────────────── */
+.strength-bar {
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.4s ease;
+}
+
+/* ─── Glow effect for input focus ─────────────────────────── */
+.input-glow:focus-within {
+  box-shadow: 0 0 0 2px rgba(123, 97, 255, 0.4),
+    0 0 20px rgba(123, 97, 255, 0.15);
+}
+
+/* ─── Pulse animation for leak status ─────────────────────── */
+@keyframes pulse-dot {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.pulse-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+/* ─── Fade-in for results ─────────────────────────────────── */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out forwards;
+}
+
+/* ─── Skeleton shimmer ────────────────────────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg,
+      var(--color-surface-700) 25%,
+      var(--color-surface-600) 50%,
+      var(--color-surface-700) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
