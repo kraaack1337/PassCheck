@@ -52,7 +52,7 @@
 # Запуск в фоновом режиме (-d)
 docker-compose -f docker-compose.prod.yml up -d --build
 ```
-- Проект будет доступен по адресу: [http://localhost](http://localhost) (стандартный порт 80).
+- Проект будет доступен по адресу: [localhosthttp://](http://localhost) (стандартный порт 80).
 - *Чтобы остановить этот режим: `docker-compose -f docker-compose.prod.yml down`*
 
 ---
