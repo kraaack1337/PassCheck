@@ -1,4 +1,5 @@
-import type { LeakStatus } from '../types';
+import type { LeakStatus } from '@passcheck/shared';
+import { apiClient } from '../api/apiClient';
 
 /**
  * Хеширует пароль через SHA-1 (Web Crypto API), делит на prefix/suffix,
@@ -32,16 +33,7 @@ export async function checkLeaks(password: string): Promise<LeakStatus> {
     const suffix = hashHex.substring(5);
 
     // ── Шаг 3: Запрос к нашему бэкенду ──────────────────────
-    const response = await fetch(`/api/v1/leaks/${prefix}`);
-
-    if (!response.ok) {
-      return {
-        state: 'error',
-        message: `Сервер ответил: ${response.status}`,
-      };
-    }
-
-    const text = await response.text();
+    const text = await apiClient.getLeaksByPrefix(prefix);
 
     // ── Шаг 4: Поиск нашего suffix в ответе ──────────────────
     // Формат HIBP: SUFFIX:COUNT\r\n

@@ -1,5 +1,5 @@
-import type { PasswordAnalysis } from '../types';
-import type { LeakStatus } from '../types';
+import type { PasswordAnalysis } from '@passcheck/shared';
+import type { LeakStatus } from '@passcheck/shared';
 import { getStrengthMeta } from '../utils/passwordAnalyzer';
 
 interface AnalysisResultsProps {

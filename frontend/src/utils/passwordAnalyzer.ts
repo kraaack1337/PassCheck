@@ -1,7 +1,7 @@
 import { zxcvbn, zxcvbnOptions } from '@zxcvbn-ts/core';
 import * as zxcvbnCommon from '@zxcvbn-ts/language-common';
 import * as zxcvbnEn from '@zxcvbn-ts/language-en';
-import type { PasswordAnalysis, StrengthMeta } from '../types';
+import type { PasswordAnalysis, StrengthMeta } from '@passcheck/shared';
 
 /* ─── Инициализация словарей zxcvbn ──────────────────────── */
 const options = {

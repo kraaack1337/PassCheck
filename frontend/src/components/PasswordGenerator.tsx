@@ -1,15 +1,9 @@
 import { useState, useCallback } from 'react';
+import { usePasswordGenerator } from '../hooks/usePasswordGenerator';
 
 interface PasswordGeneratorProps {
   onUsePassword: (password: string) => void;
 }
-
-const CHAR_SETS = {
-  lowercase: 'abcdefghijklmnopqrstuvwxyz',
-  uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-  digits: '0123456789',
-  special: '!@#$%^&*()_+-=[]{}|;:,.<>?',
-};
 
 /**
  * Генератор стойких паролей с настройками.
@@ -19,27 +13,18 @@ export default function PasswordGenerator({
   onUsePassword,
 }: PasswordGeneratorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [length, setLength] = useState(20);
-  const [useUppercase, setUseUppercase] = useState(true);
-  const [useDigits, setUseDigits] = useState(true);
-  const [useSpecial, setUseSpecial] = useState(true);
-  const [generated, setGenerated] = useState('');
-
-  const generate = useCallback(() => {
-    let charset = CHAR_SETS.lowercase;
-    if (useUppercase) charset += CHAR_SETS.uppercase;
-    if (useDigits) charset += CHAR_SETS.digits;
-    if (useSpecial) charset += CHAR_SETS.special;
-
-    const array = new Uint32Array(length);
-    crypto.getRandomValues(array);
-
-    const password = Array.from(array)
-      .map((n) => charset[n % charset.length])
-      .join('');
-
-    setGenerated(password);
-  }, [length, useUppercase, useDigits, useSpecial]);
+  const {
+    length,
+    setLength,
+    useUppercase,
+    setUseUppercase,
+    useDigits,
+    setUseDigits,
+    useSpecial,
+    setUseSpecial,
+    generated,
+    generate,
+  } = usePasswordGenerator();
 
   const handleUse = useCallback(() => {
     if (generated) {
@@ -56,17 +41,7 @@ export default function PasswordGenerator({
           setIsOpen(!isOpen);
           if (!isOpen && !generated) {
             // Генерируем сразу при открытии
-            let charset = CHAR_SETS.lowercase;
-            if (useUppercase) charset += CHAR_SETS.uppercase;
-            if (useDigits) charset += CHAR_SETS.digits;
-            if (useSpecial) charset += CHAR_SETS.special;
-            const array = new Uint32Array(length);
-            crypto.getRandomValues(array);
-            setGenerated(
-              Array.from(array)
-                .map((n) => charset[n % charset.length])
-                .join(''),
-            );
+            generate();
           }
         }}
         className="

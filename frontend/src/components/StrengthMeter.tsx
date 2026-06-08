@@ -1,4 +1,4 @@
-import type { PasswordAnalysis } from '../types';
+import type { PasswordAnalysis } from '@passcheck/shared';
 import { getStrengthMeta } from '../utils/passwordAnalyzer';
 
 interface StrengthMeterProps {
