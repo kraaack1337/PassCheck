@@ -1,4 +1,5 @@
 import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /**
  * HealthController — утилитарный контроллер для систем мониторинга.
@@ -8,6 +9,7 @@ import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
  * Полный путь: GET /api/v1/health
  * (префикс 'api/v1' задаётся глобально через app.setGlobalPrefix в main.ts)
  */
+@ApiTags('Health')
 @Controller('health')
 export class HealthController {
   /**
@@ -21,6 +23,8 @@ export class HealthController {
    */
   @Get()
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Check API health' })
+  @ApiResponse({ status: 200, description: 'API is healthy' })
   check(): { status: string; timestamp: string } {
     return {
       status: 'ok',

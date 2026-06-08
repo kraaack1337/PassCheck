@@ -8,7 +8,7 @@ import {
 import { Observable, throwError } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { Request, Response } from 'express';
-import { SessionService, RequestLogEntry } from './session.service';
+import { SessionService, RequestLogEntry } from '../../session/session.service';
 
 /**
  * SessionInterceptor — глобальный перехватчик для логирования сессий.

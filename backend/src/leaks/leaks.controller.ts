@@ -7,6 +7,7 @@ import {
   Param,
   ValidationPipe,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { LeaksService } from './leaks.service';
 import { PrefixParamDto } from './dto/prefix.param.dto';
 
@@ -17,8 +18,10 @@ import { PrefixParamDto } from './dto/prefix.param.dto';
  * клиент отправляет только первые 5 символов SHA-1 хэша — сервер
  * никогда не получает ни пароль, ни полный хэш.
  *
+ *
  * Полный путь: GET /api/v1/leaks/:prefix
  */
+@ApiTags('Leaks')
 @Controller('leaks')
 export class LeaksController {
   constructor(private readonly leaksService: LeaksService) {}
@@ -39,6 +42,10 @@ export class LeaksController {
    */
   @Get(':prefix')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Check password hash prefix for leaks (k-Anonymity)' })
+  @ApiResponse({ status: 200, description: 'List of hash suffixes separated by newlines.' })
+  @ApiResponse({ status: 400, description: 'Invalid prefix format.' })
+  @ApiResponse({ status: 500, description: 'Upstream HIBP API error.' })
   // Возвращаем plain text — именно так отвечает HIBP, клиент парсит это сам
   @Header('Content-Type', 'text/plain; charset=utf-8')
   async getLeaks(

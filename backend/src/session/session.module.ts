@@ -1,7 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { SessionService } from './session.service';
-import { SessionInterceptor } from './session.interceptor';
+import { SessionInterceptor } from '../common/interceptors/session.interceptor';
 
 /**
  * SessionModule — глобальный модуль логирования сессий.

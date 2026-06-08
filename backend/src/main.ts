@@ -1,11 +1,15 @@
 import { NestFactory } from '@nestjs/core';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { Logger } from 'nestjs-pino';
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger));
+  const logger = app.get(Logger);
 
   // ─── 1. HELMET — строгие HTTP-заголовки безопасности ───
   app.use(
@@ -14,9 +18,12 @@ async function bootstrap() {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'none'"],
-          scriptSrc: ["'none'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"], // Allow Swagger UI scripts
+          styleSrc: ["'self'", "'unsafe-inline'"],  // Allow Swagger UI styles
+          imgSrc: ["'self'", 'data:'],              // Allow Swagger UI images
           objectSrc: ["'none'"],
           frameAncestors: ["'none'"],
+          connectSrc: ["'self'"],                   // Allow Swagger UI to make API requests
         },
       },
       // HSTS: браузер обязан работать только через HTTPS (важно в продакшне)
@@ -64,7 +71,19 @@ async function bootstrap() {
     }),
   );
 
+  // ─── 4.5 Глобальный фильтр исключений ───
+  app.useGlobalFilters(new AllExceptionsFilter());
+
   // ─── 5. Rate-limiting уже активен через ThrottlerGuard в AppModule ───
+
+  // ─── 6. Swagger API Documentation ───
+  const config = new DocumentBuilder()
+    .setTitle('PassCheck API')
+    .setDescription('The API documentation for PassCheck Password Analyzer')
+    .setVersion('1.0')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
 
 
   const port = process.env.PORT ?? 3001;
