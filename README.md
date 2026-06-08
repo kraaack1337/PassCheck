@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+
 # 🛡️ PassCheck — Password Analyzer & Leak Checker
 
 Современное веб-приложение для анализа надёжности паролей и проверки на наличие в базах утечек.
@@ -268,4 +270,8 @@ make test             # Запуск тестов
 
 ## 📖 Документация
 
-Полная техническая документация (архитектура, API, безопасность, база данных, troubleshooting) — в файле [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md).
+# Полная техническая документация (архитектура, API, безопасность, база данных, troubleshooting) — в файле [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md).
+
+# PassCheck
+
+> > > > > > > upstream/main
