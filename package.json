@@ -1,9 +1,20 @@
 {
-  "dependencies": {
-    "@nestjs/throttler": "^6.5.0",
-    "axios": "^1.15.2",
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.15.1",
-    "helmet": "^8.1.0"
+  "name": "passcheck-workspace",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "shared"
+  ],
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7"
+  },
+  "scripts": {
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.ts": "eslint --fix",
+    "*.{ts,tsx,js,json,md}": "prettier --write"
   }
 }

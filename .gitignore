@@ -1,34 +1,38 @@
-# Dependencies
+# ── Dependencies ───────────────────────────────────────────
 node_modules/
 **/node_modules/
 
-# Build outputs
+# ── Build outputs ──────────────────────────────────────────
 dist/
 **/dist/
 build/
 **/build/
 
-# IDE files
+# ── IDE ────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Environment variables
+# ── Environment variables ─────────────────────────────────
 .env
 .env.local
 .env.*.local
 
-# Logs
+# ── Logs ───────────────────────────────────────────────────
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 logs/
 *.log
 
-# Docker
-.dockerignore
+# ── Coverage ───────────────────────────────────────────────
+coverage/
+.nyc_output/
 
-# OS files
+# ── OS ─────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+
+# ── Gemini / AI ────────────────────────────────────────────
+.gemini/
