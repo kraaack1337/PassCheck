@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { analyzePassword } from './passwordAnalyzer';
+import { analyzePassword } from '../utils/passwordAnalyzer';
 
 describe('passwordAnalyzer', () => {
   it('should evaluate a weak password correctly', () => {

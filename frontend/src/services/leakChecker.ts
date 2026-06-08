@@ -15,6 +15,16 @@ import { apiClient } from '../api/apiClient';
  * видит только prefix — это ~1 миллион возможных паролей, бесполезно.
  */
 export async function checkLeaks(password: string): Promise<LeakStatus> {
+  // ── Проверяем Secure Context ДО вызова crypto.subtle ────
+  if (typeof crypto === 'undefined' || !crypto.subtle) {
+    return {
+      state: 'error',
+      message:
+        'Ошибка безопасности: браузер заблокировал криптографию (crypto.subtle). ' +
+        'Для работы через IP-адрес или домен требуется HTTPS соединение.',
+    };
+  }
+
   try {
     // ── Шаг 1: SHA-1 хеш пароля ─────────────────────────────
     const encoder = new TextEncoder();
@@ -50,14 +60,6 @@ export async function checkLeaks(password: string): Promise<LeakStatus> {
 
     return { state: 'safe' };
   } catch (err: any) {
-    // Проверка на ошибку Secure Context
-    if (!crypto || !crypto.subtle) {
-      return {
-        state: 'error',
-        message: 'Ошибка безопасности: браузер заблокировал криптографию (crypto.subtle). Для работы через IP-адрес или домен требуется HTTPS соединение.',
-      };
-    }
-    
     return {
       state: 'error',
       message: `Ошибка соединения: ${err.message || String(err)}`,

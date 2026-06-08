@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { HealthController } from './health/health.controller';
+import { HealthModule } from './health/health.module';
 import { LeaksModule } from './leaks/leaks.module';
 import { RedisModule } from './redis/redis.module';
 import { SessionModule } from './session/session.module';
@@ -41,8 +41,9 @@ import * as Joi from 'joi';
     RedisModule,
     SessionModule,
     LeaksModule,
+    HealthModule,
   ],
-  controllers: [HealthController],
+  controllers: [],
   providers: [
     {
       // Регистрируем ThrottlerGuard глобально — он будет защищать все маршруты

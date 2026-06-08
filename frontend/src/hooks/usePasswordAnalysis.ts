@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { LeakStatus, PasswordAnalysis } from '@passcheck/shared';
 import { analyzePassword } from '../utils/passwordAnalyzer';
-import { checkLeaks } from '../utils/leakChecker';
+import { checkLeaks } from '../services/leakChecker';
 
 export function usePasswordAnalysis() {
   const [password, setPassword] = useState('');

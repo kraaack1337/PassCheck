@@ -2,11 +2,11 @@
 FROM node:22-alpine as build
 
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json ./
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
 COPY shared/package.json ./shared/
-RUN npm ci
+RUN npm install
 
 COPY backend/ ./backend/
 COPY shared/ ./shared/
@@ -18,11 +18,11 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Копируем package.json и устанавливаем ТОЛЬКО production-зависимости (без dev)
-COPY package.json package-lock.json ./
+COPY package.json ./
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
 COPY shared/package.json ./shared/
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # Копируем скомпилированный код
 COPY --from=build /app/backend/dist ./backend/dist

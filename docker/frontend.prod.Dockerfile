@@ -2,11 +2,11 @@
 FROM node:22-alpine as build
 
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json ./
 COPY frontend/package.json ./frontend/
 COPY backend/package.json ./backend/
 COPY shared/package.json ./shared/
-RUN npm ci
+RUN npm install
 
 COPY frontend/ ./frontend/
 COPY shared/ ./shared/

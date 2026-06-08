@@ -7,14 +7,24 @@
     "shared"
   ],
   "devDependencies": {
+    "eslint": "^9.0.0",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.7"
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.0.0"
   },
   "scripts": {
     "prepare": "husky"
   },
   "lint-staged": {
-    "*.ts": "eslint --fix",
+    "backend/src/**/*.ts": "eslint -c backend/eslint.config.mjs --fix",
     "*.{ts,tsx,js,json,md}": "prettier --write"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all"
+  },
+  "dependencies": {
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1"
   }
 }
