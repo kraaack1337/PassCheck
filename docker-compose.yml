@@ -3,13 +3,13 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.frontend
+      dockerfile: docker/frontend.Dockerfile
     ports:
       - "3000:3000"
     volumes:
       # Hot-reload: монтируем исходники поверх скопированных в образ
-      - ./password-analyzer-frontend/src:/app/src
-      - ./password-analyzer-frontend/index.html:/app/index.html
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
       # Не перезаписываем node_modules из контейнера
       - frontend_node_modules:/app/node_modules
     environment:
@@ -26,18 +26,24 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile.backend
+      dockerfile: docker/backend.Dockerfile
     ports:
       - "3001:3001"
     volumes:
       # Hot-reload: монтируем исходники
-      - ./password-analyzer-backend/src:/app/src
+      - ./backend/src:/app/src
       # Не перезаписываем node_modules из контейнера
       - backend_node_modules:/app/node_modules
     environment:
       - PORT=3001
       # В Docker фронтенд доступен по имени сервиса
       - FRONTEND_ORIGIN=http://localhost:3000
+      # Redis — подключение к контейнеру redis по имени сервиса
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
     # DNS Google — помогает обойти блокировку api.pwnedpasswords.com
     dns:
       - 8.8.8.8
@@ -49,6 +55,29 @@ services:
       retries: 3
       start_period: 15s
 
+  # ─── Redis: кэш для HIBP-ответов ───────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      # Проброс порта для локальной отладки (redis-cli, RedisInsight)
+      - "6379:6379"
+    volumes:
+      # Персистентное хранилище — кэш переживает перезапуск контейнера
+      - redis_data:/data
+    # Запускаем Redis с AOF-персистентностью и ограничением памяти
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
 volumes:
   frontend_node_modules:
   backend_node_modules:
+  redis_data:

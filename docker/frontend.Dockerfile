@@ -3,11 +3,11 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Копируем package-файлы и устанавливаем зависимости
-COPY password-analyzer-frontend/package.json password-analyzer-frontend/package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
 # Копируем исходники
-COPY password-analyzer-frontend/ ./
+COPY frontend/ ./
 
 # Vite dev-сервер
 EXPOSE 3000

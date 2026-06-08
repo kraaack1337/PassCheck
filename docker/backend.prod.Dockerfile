@@ -2,10 +2,10 @@
 FROM node:22-alpine as build
 
 WORKDIR /app
-COPY password-analyzer-backend/package.json password-analyzer-backend/package-lock.json ./
+COPY backend/package.json backend/package-lock.json ./
 RUN npm ci
 
-COPY password-analyzer-backend/ ./
+COPY backend/ ./
 RUN npm run build
 
 # Этап 2: Минимальный production-образ
@@ -14,7 +14,7 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Копируем package.json и устанавливаем ТОЛЬКО production-зависимости (без dev)
-COPY password-analyzer-backend/package.json password-analyzer-backend/package-lock.json ./
+COPY backend/package.json backend/package-lock.json ./
 RUN npm ci --omit=dev
 
 # Копируем скомпилированный код

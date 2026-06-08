@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+.git
+.gitignore
+.gemini
+*.md
+coverage
+.prettierrc
+.vscode
+.idea
