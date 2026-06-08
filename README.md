@@ -1,87 +1,126 @@
-# 🛡️ PassCheck (Password Analyzer & Leak Checker)
+# 🛡️ PassCheck — Password Analyzer & Leak Checker
 
-Современное веб-приложение для анализа надежности паролей и проверки их на наличие в базах утечек. 
+Современное веб-приложение для анализа надежности паролей и проверки на наличие в базах утечек.
 
 ## ✨ Основные возможности
-- **Локальный анализ:** Проверка сложности пароля (энтропия, время взлома) происходит прямо в браузере.
-- **k-Anonymity:** Проверка утечек через API *HaveIBeenPwned* без отправки самого пароля на сервер.
-- **Генератор паролей:** Создание надежных комбинаций.
-- **Безопасность:** Использование заголовков Helmet, Rate-limiting и строгих правил CORS.
+
+- **Локальный анализ** — проверка сложности пароля (энтропия, время взлома) целиком в браузере через [zxcvbn](https://github.com/zxcvbn-ts/zxcvbn)
+- **k-Anonymity** — проверка утечек через API [HaveIBeenPwned](https://haveibeenpwned.com/API/v3#PwnedPasswords) без отправки пароля на сервер
+- **Генератор паролей** — создание криптографически стойких паролей (`crypto.getRandomValues`)
+- **Безопасность** — Helmet, Rate-limiting (10 req/s/IP), строгий CORS
 
 ## 🛠 Технологии
-- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS 4.
-- **Backend:** NestJS, Axios (с retry-логикой), Helmet, Throttler.
-- **DevOps:** Docker, Docker Compose, Nginx.
 
----
-
-## 👨‍💻 Инструкция для команды (Включая пользователей Windows)
-
-Добро пожаловать в проект! Эта инструкция поможет вам быстро развернуть проект у себя на компьютере и начать писать код.
-
-### ⚙️ Требования к ПО
-1. **Git** (обязательно).
-   * 🪟 *Для Windows:* Очень важно, чтобы Git правильно обрабатывал переносы строк. Выполните в терминале команду: `git config --global core.autocrlf true`, чтобы избежать конфликтов между Windows и Linux.
-2. **Docker Desktop** (рекомендуется для быстрого запуска).
-   * 🪟 *Для Windows:* В настройках Docker Desktop обязательно поставьте галочку **"Use WSL 2 based engine"** — это даст максимальную скорость работы.
-3. **Node.js 22+** (если планируете запускать проект по старинке, без Докера).
-
-### 🚀 Запуск проекта (Режим Разработки / Dev Mode)
-Это основной режим работы. В нем включен **Hot-Reload**: когда вы сохраняете код в редакторе, сайт обновляется автоматически без перезагрузки.
-
-1. Склонируйте репозиторий:
-   ```bash
-   git clone https://github.com/kraaack1337/PassCheck.git
-   cd PassCheck
-   ```
-
-2. Запустите Docker Compose:
-   ```bash
-   docker-compose up --build
-   ```
-   *(Флаг `--build` нужен только при первом запуске или если кто-то обновил пакеты в `package.json`).*
-
-3. Откройте приложение:
-   - **Frontend:** [http://localhost:3000](http://localhost:3000)
-   - **Backend API:** [http://localhost:3001](http://localhost:3001)
-
-### 🌍 Запуск проекта (Production Mode)
-Используйте этот режим, если хотите проверить, как проект будет работать на реальном боевом сервере через быстрый веб-сервер Nginx.
-
-```bash
-# Запуск в фоновом режиме (-d)
-docker-compose -f docker-compose.prod.yml up -d --build
-```
-- Проект будет доступен по адресу: [localhosthttp://](http://localhost) (стандартный порт 80).
-- *Чтобы остановить этот режим: `docker-compose -f docker-compose.prod.yml down`*
-
----
-
-### 💻 Альтернативный запуск (Без Docker)
-Если Docker у вас работает медленно или вы предпочитаете классический способ разработки, можно запустить всё через Node.js:
-
-**Терминал 1 (Бэкенд):**
-```bash
-cd password-analyzer-backend
-npm install
-npm run start:dev
-```
-
-**Терминал 2 (Фронтенд):**
-```bash
-cd password-analyzer-frontend
-npm install
-npm run dev
-```
+| Слой       | Стек                                              |
+|------------|---------------------------------------------------|
+| Frontend   | React 19, TypeScript, Vite, Tailwind CSS 4        |
+| Backend    | NestJS 11, Axios (с retry), Helmet, Throttler     |
+| DevOps     | Docker, Docker Compose, Nginx                     |
 
 ---
 
 ## 📂 Структура проекта
-- `/password-analyzer-frontend` — React/Vite приложение. Все компоненты и стили лежат внутри папки `src`.
-- `/password-analyzer-backend` — NestJS API. Вся логика общения с базами утечек лежит в `src/leaks`.
-- `docker-compose.yml` — Конфиг для локальной разработки (пробрасывает ваши папки с кодом внутрь контейнеров для работы Hot-Reload).
-- `docker-compose.prod.yml` — Конфиг для "боевого" сервера (компилирует код и раздает статику через Nginx).
-- `nginx.conf` — Настройки маршрутизации для Production (раздает React и проксирует `/api` на бэкенд).
 
-## 📖 Как работает проверка утечек (k-Anonymity)
-При вводе пароля он хешируется (алгоритм SHA-1) прямо в браузере. На бэкенд улетают только **первые 5 символов** этого хеша. Наш бэкенд обращается к базе `api.pwnedpasswords.com`, получает список всех возможных хвостов хешей и возвращает их браузеру. Поиск совпадения происходит локально на вашем ПК. Сам пароль никогда не покидает ваш браузер!
+```
+.
+├── frontend/                 # React/Vite приложение
+│   ├── src/
+│   │   ├── components/       # UI-компоненты (PasswordInput, StrengthMeter, ...)
+│   │   ├── utils/            # Бизнес-логика (passwordAnalyzer, leakChecker)
+│   │   ├── types.ts          # TypeScript-типы и интерфейсы
+│   │   ├── App.tsx           # Главный компонент
+│   │   ├── main.tsx          # Точка входа React
+│   │   └── index.css         # Дизайн-система (Tailwind + кастомные стили)
+│   ├── index.html
+│   ├── vite.config.ts
+│   ├── package.json
+│   └── tsconfig*.json
+│
+├── backend/                  # NestJS API
+│   ├── src/
+│   │   ├── health/           # Модуль healthcheck (GET /api/v1/health)
+│   │   ├── leaks/            # Модуль проверки утечек (GET /api/v1/leaks/:prefix)
+│   │   │   ├── dto/          # DTO-валидация входных параметров
+│   │   │   ├── leaks.controller.ts
+│   │   │   ├── leaks.service.ts
+│   │   │   └── leaks.module.ts
+│   │   ├── app.module.ts     # Корневой модуль (Throttler, LeaksModule, Health)
+│   │   └── main.ts           # Точка входа (Helmet, CORS, ValidationPipe)
+│   ├── test/                 # E2E-тесты
+│   ├── package.json
+│   └── tsconfig*.json
+│
+├── docker/                   # Docker-конфигурация
+│   ├── backend.Dockerfile        # Backend dev
+│   ├── backend.prod.Dockerfile   # Backend production (multi-stage)
+│   ├── frontend.Dockerfile       # Frontend dev
+│   ├── frontend.prod.Dockerfile  # Frontend production (multi-stage → Nginx)
+│   └── nginx/
+│       └── nginx.conf            # Nginx: раздача статики + проксирование /api
+│
+├── docker-compose.yml        # Dev-режим (hot-reload)
+├── docker-compose.prod.yml   # Production-режим (Nginx + NestJS)
+├── ARCHITECTURE.md           # Подробная техническая документация
+└── README.md                 # ← вы здесь
+```
+
+---
+
+## 🚀 Быстрый старт
+
+### Требования
+
+- **Docker Desktop** (рекомендуется) или **Node.js 22+**
+- **Git** (для Windows: `git config --global core.autocrlf true`)
+
+### Режим разработки (Docker)
+
+```bash
+git clone https://github.com/kraaack1337/PassCheck.git
+cd PassCheck
+docker compose up --build
+```
+
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:3001/api/v1/health
+
+Hot-reload включен — при сохранении кода страница обновляется автоматически.
+
+### Режим разработки (без Docker)
+
+**Терминал 1 — Backend:**
+```bash
+cd backend
+npm install
+npm run start:dev
+```
+
+**Терминал 2 — Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Production
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Приложение доступно на http://localhost (порт 80).
+
+---
+
+## 🔐 Как работает проверка утечек (k-Anonymity)
+
+1. Пароль хешируется **SHA-1** прямо в браузере
+2. На бэкенд отправляются только **первые 5 символов** хеша (prefix)
+3. Бэкенд запрашивает [HIBP Range API](https://haveibeenpwned.com/API/v3#SearchingPwnedPasswordsByRange) и возвращает список суффиксов
+4. Браузер ищет совпадение локально
+
+**Сервер никогда не знает ни пароль, ни полный хеш.**
+
+## 📖 Документация
+
+Подробная архитектура, схемы безопасности и настройки деплоя описаны в [ARCHITECTURE.md](ARCHITECTURE.md).

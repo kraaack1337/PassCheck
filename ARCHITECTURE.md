@@ -13,8 +13,8 @@
 
 ### Технологический стек:
 - **Frontend:** React 19, TypeScript, Vite (сборщик), Tailwind CSS 4 (стилизация), Web Crypto API (нативное хеширование).
-- **Backend:** NestJS (фреймворк), RxJS / Axios (работа с внешним API), Helmet & Throttler (безопасность).
-- **Инфраструктура:** Docker, Docker Compose, Nginx (reverse-proxy, балансировщик и веб-сервер для раздачи статических ассетов).
+- **Backend:** NestJS (фреймворк), RxJS / Axios (работа с внешним API), Helmet & Throttler (безопасность), ioredis (клиент Redis).
+- **Инфраструктура:** Docker, Docker Compose, Nginx (reverse-proxy, балансировщик и веб-сервер для раздачи статических ассетов), Redis 7 (кэш HIBP-ответов).
 
 ---
 
@@ -29,21 +29,27 @@ graph TD
     Client[Browser / Client] -->|HTTP/HTTPS| Nginx[Nginx Reverse Proxy]
     Nginx -->|Служит статику| Frontend[Static Files React/Vite]
     Nginx -->|Проксирует /api| Backend[NestJS API Gateway]
-    Backend -->|Запрашивает суффиксы| HIBP[HaveIBeenPwned API]
+    Backend -->|Cache HIT| Redis[(Redis Cache)]
+    Backend -->|Cache MISS| HIBP[HaveIBeenPwned API]
+    HIBP -->|Суффиксы| Backend
+    Backend -->|Сохраняет в кэш| Redis
     
     classDef client fill:#f9f,stroke:#333,stroke-width:2px;
     classDef internal fill:#bbf,stroke:#333,stroke-width:2px;
     classDef external fill:#fbb,stroke:#333,stroke-width:2px;
+    classDef cache fill:#bfb,stroke:#333,stroke-width:2px;
     
     class Client client;
     class Nginx,Frontend,Backend internal;
     class HIBP external;
+    class Redis cache;
 ```
 
 1. **Frontend (SPA):** Загружается в браузер пользователя. Отвечает за UI, локальные вычисления (анализ надежности) и отправку частичных данных (префиксов).
 2. **Nginx (в Production):** Точка входа для всего трафика. Эффективно раздает статические файлы Frontend-а (HTML, JS, CSS) и проксирует API-запросы на Backend-контейнер.
-3. **Backend (NestJS):** Принимает запросы, валидирует их, ограничивает спам (Rate Limiting) и делает защищенный запрос к внешнему провайдеру утечек.
-4. **HaveIBeenPwned API:** Внешний сервис, предоставляющий базу данных утекших паролей.
+3. **Backend (NestJS):** Принимает запросы, валидирует их, ограничивает спам (Rate Limiting), проверяет Redis-кэш и при промахе делает защищенный запрос к внешнему провайдеру утечек.
+4. **Redis:** Высокопроизводительное key-value хранилище. Кэширует ответы HIBP API с TTL 1 час и политикой вытеснения LRU (Least Recently Used), ограничение памяти — 128 МБ.
+5. **HaveIBeenPwned API:** Внешний сервис, предоставляющий базу данных утекших паролей.
 
 ### 2.2 Схема потока данных (Data Flow) - Проверка k-Anonymity
 
@@ -54,6 +60,7 @@ sequenceDiagram
     participant User
     participant Browser
     participant Backend
+    participant Redis
     participant HIBP API
     
     User->>Browser: Вводит пароль "P@ssw0rd123"
@@ -61,8 +68,15 @@ sequenceDiagram
     note over Browser: SHA-1 = 7A6B4...89F
     note over Browser: Разделение: 7A6B4 (Префикс) + Суффикс
     Browser->>Backend: GET /api/v1/leaks/7A6B4
-    Backend->>HIBP API: GET /range/7A6B4
-    HIBP API-->>Backend: Возвращает список 500+ суффиксов
+    Backend->>Redis: GET hibp:7A6B4
+    alt Cache HIT
+        Redis-->>Backend: Возвращает закэшированные суффиксы
+    else Cache MISS
+        Redis-->>Backend: null
+        Backend->>HIBP API: GET /range/7A6B4
+        HIBP API-->>Backend: Возвращает список 500+ суффиксов
+        Backend->>Redis: SET hibp:7A6B4 (TTL: 1 час)
+    end
     Backend-->>Browser: Пересылает список суффиксов
     note over Browser: Локально: ищет свой суффикс в списке
     alt Суффикс найден
@@ -73,12 +87,11 @@ sequenceDiagram
 ```
 
 ### 2.3 Структура репозитория
-- `/password-analyzer-frontend/` — Исходный код SPA (React + Vite). Содержит компоненты интерфейса и изолированную логику вычислений (`/src/utils/passwordAnalyzer.ts` и `/src/utils/leakChecker.ts`).
-- `/password-analyzer-backend/` — API-сервер на фреймворке NestJS. Структурирован по модулям (`app`, `leaks`, `health`).
+- `/frontend/` — Исходный код SPA (React + Vite). Содержит компоненты интерфейса и изолированную логику вычислений (`/src/utils/passwordAnalyzer.ts` и `/src/utils/leakChecker.ts`).
+- `/backend/` — API-сервер на фреймворке NestJS. Структурирован по модулям (`leaks`, `health`, `redis`, `session`).
+- `/docker/` — Docker-файлы для сборки контейнеров (dev/prod) и конфигурация Nginx (`docker/nginx/nginx.conf`).
 - `docker-compose.yml` — Конфигурация для локальной разработки (Dev Mode).
 - `docker-compose.prod.yml` — Конфигурация для Production-развертывания.
-- `Dockerfile.*` — Инструкции по сборке образов контейнеров.
-- `nginx.conf` — Конфигурация маршрутизации для Production.
 
 ---
 
@@ -133,6 +146,8 @@ docker-compose -f docker-compose.prod.yml up -d --build
 - **BACKEND:** 
   - `PORT` — Порт, на котором слушает NestJS (по умолчанию `3001`).
   - `FRONTEND_ORIGIN` — Домен вашего фронтенда. Критически важен для настройки политик CORS. В проде должен указывать на ваш реальный домен (например, `https://mypwcheck.com`).
+  - `REDIS_HOST` — Хост Redis-сервера (по умолчанию `redis` — имя Docker-сервиса).
+  - `REDIS_PORT` — Порт Redis-сервера (по умолчанию `6379`).
 
 ---
 
@@ -164,7 +179,7 @@ Frontend-приложение спроектировано с упором на 
 
 ## 5. Backend Документация (API Reference)
 
-Backend построен на фреймворке **NestJS**. Он выполняет роль защищенного прокси-слоя (BFF - Backend For Frontend). База данных не используется (Stateless архитектура).
+Backend построен на фреймворке **NestJS**. Он выполняет роль защищенного прокси-слоя (BFF - Backend For Frontend). Для кэширования ответов HIBP API используется **Redis** (через библиотеку `ioredis`). При недоступности Redis сервис автоматически переключается на in-memory fallback.
 
 ### 5.1 Контроллеры и Эндпоинты
 
@@ -175,16 +190,69 @@ Backend построен на фреймворке **NestJS**. Он выполн
 - **Параметры пути:** `prefix` (строка, ровно 5 символов, 16-ричный формат).
 - **Валидация (DTO):** Используется глобальный `ValidationPipe` с настройками `transform: true` и `whitelist: true`. Если префикс не проходит проверку, запрос отклоняется (400 Bad Request) еще до попадания в контроллер.
 - **Логика (`LeaksService`):**
-  1. Сервис сначала проверяет локальный in-memory кэш (`Map<string, string>`). Если префикс уже искали, ответ отдается мгновенно (Cache HIT).
+  1. Сервис сначала проверяет **Redis-кэш** по ключу `hibp:<prefix>`. Если префикс уже искали и TTL не истёк, ответ отдается мгновенно (Cache HIT).
   2. При промахе кэша (Cache MISS) делает HTTP GET запрос через `axios` к `https://api.pwnedpasswords.com/range/:prefix`.
   3. В запрос добавляется заголовок `Add-Padding: 'true'`. Это заставляет API HaveIBeenPwned добавлять фейковые суффиксы в ответ до фиксированного размера, что защищает от атак анализа трафика (Traffic Analysis).
+  4. Полученный ответ сохраняется в Redis с TTL = 1 час (`EX 3600`).
+- **Redis-кэш (`RedisService`):**
+  - Глобальный модуль (`@Global()`) — доступен из любого модуля приложения.
+  - Автоматическое переподключение с экспоненциальной задержкой (до 10 попыток).
+  - **Fallback:** При недоступности Redis автоматически переключается на in-memory `Map` — приложение продолжает работать.
+  - **Graceful shutdown:** Корректно закрывает соединение при остановке сервиса.
+  - Конфигурация через переменные окружения: `REDIS_HOST` (по умолчанию `redis`), `REDIS_PORT` (по умолчанию `6379`).
 - **Отказоустойчивость:** Интегрирован пакет `axios-retry`. Если сервер HIBP возвращает ошибку 5xx или происходит сетевой сбой, Backend сделает 3 повторные попытки с экспоненциальной задержкой (Exponential Backoff: ~1с, ~2с, ~4с).
 - **Ответ:** Отдает `text/plain; charset=utf-8` напрямую от HIBP, избегая оверхеда на парсинг JSON.
 
 #### `GET /api/v1/health`
 - Эндпоинт для Liveness / Readiness Probes. Используется Docker Compose и Nginx для проверки доступности контейнера перед направлением на него трафика.
 
-### 5.2 Обработка ошибок (Error Handling)
+### 5.2 Логирование сессий (SessionModule)
+
+Модуль `SessionModule` автоматически отслеживает активность пользователей через глобальный **NestJS Interceptor**. Данные хранятся в Redis.
+
+#### Архитектура
+- **`SessionInterceptor`** — глобальный перехватчик (`APP_INTERCEPTOR`), регистрируется автоматически при импорте модуля. Перехватывает **каждый** HTTP-запрос (кроме Docker health-check) и фиксирует: маршрут, статус-код, время ответа.
+- **`SessionService`** — сервис для чтения/записи данных сессии. Доступен из любого модуля (`@Global()`).
+
+#### Структура данных в Redis
+- **Ключ:** `session:<ip>` (например, `session:172.18.0.1`)
+- **Значение:** JSON-объект `SessionData`
+- **TTL:** 30 минут (скользящее окно — обновляется при каждом запросе)
+
+```json
+{
+  "ip": "172.18.0.1",
+  "userAgent": "Mozilla/5.0 ...",
+  "createdAt": "2026-06-07T17:00:00.000Z",
+  "lastSeenAt": "2026-06-07T17:05:30.000Z",
+  "totalRequests": 12,
+  "leakChecks": 5,
+  "logs": [
+    {
+      "timestamp": "2026-06-07T17:05:30.000Z",
+      "method": "GET",
+      "route": "/api/v1/leaks/:prefix",
+      "statusCode": 200,
+      "responseTimeMs": 45
+    }
+  ]
+}
+```
+
+#### Конфиденциальность
+- Реальные значения `prefix` **никогда не логируются** — в поле `route` записывается только паттерн маршрута (`/api/v1/leaks/:prefix`).
+- Сессии автоматически удаляются через 30 минут неактивности.
+- Docker health-check запросы (wget) пропускаются, чтобы не засорять логи.
+
+#### Просмотр сессий через redis-cli
+```bash
+docker exec -it project-redis-1 redis-cli
+KEYS session:*          # Список активных сессий
+GET session:172.18.0.1  # Данные конкретной сессии
+TTL session:172.18.0.1  # Оставшееся время жизни
+```
+
+### 5.3 Обработка ошибок (Error Handling)
 Все ошибки перехватываются встроенным фильтром NestJS. Ошибки стандартизированы в JSON:
 - **400 Bad Request:** Если `prefix` не прошел валидацию (например, длина не 5 символов).
 - **429 Too Many Requests:** Если сработал Throttler Guard (Rate Limit).
